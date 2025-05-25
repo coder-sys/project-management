@@ -22,8 +22,7 @@ const Navbar = () => {
       console.error("Error signing out: ", error);
     }
   };
-
-  if (!currentUser) return null;
+  // Show a basic version of the navbar while loading user data
   const currentUserDetails = currentUser?.userDetails;
 
   return (
