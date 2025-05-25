@@ -47,7 +47,7 @@ const HomePage = () => {
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
   if (tasksLoading || isProjectsLoading) return <div>Loading..</div>;
-  if (tasksError || !tasks || !projects) return <div>Error fetching data</div>;
+  if (tasksError || !tasks || !projects) return <div>{tasksError}</div>;
 
   const priorityCount = tasks.reduce(
     (acc: Record<string, number>, task: Task) => {
