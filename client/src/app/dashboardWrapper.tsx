@@ -46,9 +46,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 const DashboardWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <StoreProvider>
-      <AuthProvider>
         <DashboardLayout>{children}</DashboardLayout>
-      </AuthProvider>
     </StoreProvider>
   );
 };

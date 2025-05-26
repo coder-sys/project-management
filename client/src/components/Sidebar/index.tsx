@@ -31,21 +31,29 @@ const Sidebar = () => {
   const [showProjects, setShowProjects] = useState(true);
   const [showPriority, setShowPriority] = useState(true);
 
-  const { data: projects } = useGetProjectsQuery();
+  // Robustly handle loading and error states
+  const {
+    data: projects = [],
+    isLoading: isProjectsLoading,
+    isError: isProjectsError,
+  } = useGetProjectsQuery();
   const dispatch = useAppDispatch();
   const isSidebarCollapsed = useAppSelector(
-    (state) => state.global.isSidebarCollapsed,
+    (state) => state.global.isSidebarCollapsed
   );
 
-  const { data: currentUser } = useGetAuthUserQuery({});
+  const {
+    data: currentUser,
+    isLoading: isUserLoading,
+    isError: isUserError,
+  } = useGetAuthUserQuery({});
   const handleSignOut = async () => {
     try {
       await signOut();
     } catch (error) {
-      console.error("Error signing out: ", error);
+      // Silently fail, don't break sidebar
     }
   };
- 
 
   const sidebarClassNames = `fixed flex flex-col h-[100%] justify-between shadow-xl
     transition-all duration-300 h-full z-40 dark:bg-black overflow-y-auto bg-white
@@ -74,7 +82,7 @@ const Sidebar = () => {
         {/* TEAM */}
         <div className="flex items-center gap-5 border-y-[1.5px] border-gray-200 px-8 py-4 dark:border-gray-700">
           <Image
-            src="https://pm--s3--images.s3.us-east-1.amazonaws.com/logo.png"
+            src="/logo.png"
             alt="Logo"
             width={40}
             height={40}
@@ -112,15 +120,24 @@ const Sidebar = () => {
           )}
         </button>
         {/* PROJECTS LIST */}
-        {showProjects &&
-          projects?.map((project) => (
-            <SidebarLink
-              key={project.id}
-              icon={Briefcase}
-              label={project.name}
-              href={`/projects/${project.id}`}
-            />
-          ))}
+        {showProjects && (
+          <div>
+            {isProjectsLoading && <div className="px-8 text-xs text-gray-400">Loading projects...</div>}
+            {isProjectsError && <div className="px-8 text-xs text-red-400">Error loading projects</div>}
+            {!isProjectsLoading && !isProjectsError && projects.length === 0 && (
+              <div className="px-8 text-xs text-gray-400">No projects found</div>
+            )}
+            {Array.isArray(projects) &&
+              projects.map((project) => (
+                <SidebarLink
+                  key={project.id}
+                  icon={Briefcase}
+                  label={project.name}
+                  href={`/projects/${project.id}`}
+                />
+              ))}
+          </div>
+        )}
 
         {/* PRIORITIES LINKS */}
         <button
@@ -136,36 +153,21 @@ const Sidebar = () => {
         </button>
         {showPriority && (
           <>
-            <SidebarLink
-              icon={AlertCircle}
-              label="Urgent"
-              href="/priority/urgent"
-            />
-            <SidebarLink
-              icon={ShieldAlert}
-              label="High"
-              href="/priority/high"
-            />
-            <SidebarLink
-              icon={AlertTriangle}
-              label="Medium"
-              href="/priority/medium"
-            />
+            <SidebarLink icon={AlertCircle} label="Urgent" href="/priority/urgent" />
+            <SidebarLink icon={ShieldAlert} label="High" href="/priority/high" />
+            <SidebarLink icon={AlertTriangle} label="Medium" href="/priority/medium" />
             <SidebarLink icon={AlertOctagon} label="Low" href="/priority/low" />
-            <SidebarLink
-              icon={Layers3}
-              label="Backlog"
-              href="/priority/backlog"
-            />
+            <SidebarLink icon={Layers3} label="Backlog" href="/priority/backlog" />
           </>
         )}
       </div>
       <div className="z-10 mt-32 flex w-full flex-col items-center gap-4 bg-white px-8 py-4 dark:bg-black md:hidden">
         <div className="flex w-full items-center">
           <div className="align-center flex h-9 w-9 justify-center">
-        
+            <User className="h-8 w-8 rounded-full bg-gray-200 p-1 text-gray-600 dark:bg-gray-700 dark:text-gray-400" />
           </div>
           <span className="mx-3 text-gray-800 dark:text-white">
+            {isUserLoading ? "Loading..." : isUserError ? "Error" : currentUser?.userDetails?.username || "User"}
           </span>
           <button
             className="self-start rounded bg-blue-400 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500 md:block"
