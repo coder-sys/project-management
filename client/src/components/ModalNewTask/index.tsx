@@ -1,5 +1,5 @@
 import Modal from "@/components/Modal";
-import { Priority, Status, useCreateTaskMutation } from "@/state/api";
+import { Priority, Status, useCreateTaskMutation, useGetProjectsQuery } from "@/state/api";
 import React, { useState } from "react";
 import { formatISO } from "date-fns";
 
@@ -11,6 +11,7 @@ type Props = {
 
 const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
   const [createTask, { isLoading }] = useCreateTaskMutation();
+  const { data: projects = [] } = useGetProjectsQuery();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<Status>(Status.ToDo);
@@ -21,16 +22,32 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
   const [authorUserId, setAuthorUserId] = useState("");
   const [assignedUserId, setAssignedUserId] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [showProjectIdInput, setShowProjectIdInput] = useState(false);
+
+  // Find the latest projectId and increment by 1
+  const latestProjectId = React.useMemo(() => {
+    if (!projects || projects.length === 0) return 1;
+    return Math.max(...projects.map((p) => p.id)) + 1;
+  }, [projects]);
 
   const handleSubmit = async () => {
-    if (!title || !authorUserId || !(id !== null || projectId)) return;
+    let resolvedProjectId: number;
+    if (id !== null && id !== undefined && id !== "") {
+      resolvedProjectId = Number(id);
+    } else if (showProjectIdInput && projectId) {
+      resolvedProjectId = Number(projectId);
+    } else {
+      resolvedProjectId = latestProjectId;
+    }
+    if (!title || !authorUserId || isNaN(resolvedProjectId) || resolvedProjectId <= 0)
+      return;
 
-    const formattedStartDate = formatISO(new Date(startDate), {
-      representation: "complete",
-    });
-    const formattedDueDate = formatISO(new Date(dueDate), {
-      representation: "complete",
-    });
+    const formattedStartDate = startDate
+      ? formatISO(new Date(startDate), { representation: "complete" })
+      : undefined;
+    const formattedDueDate = dueDate
+      ? formatISO(new Date(dueDate), { representation: "complete" })
+      : undefined;
 
     await createTask({
       title,
@@ -41,16 +58,22 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
       startDate: formattedStartDate,
       dueDate: formattedDueDate,
       authorUserId: parseInt(authorUserId),
-      assignedUserId: parseInt(assignedUserId),
-      projectId: id !== null ? Number(id) : Number(projectId),
+      assignedUserId: assignedUserId ? parseInt(assignedUserId) : undefined,
+      projectId: resolvedProjectId,
     });
   };
 
   const isFormValid = () => {
+    let resolvedProjectId: number;
+    if (id !== null && id !== undefined && id !== "") {
+      resolvedProjectId = Number(id);
+    } else if (showProjectIdInput && projectId) {
+      resolvedProjectId = Number(projectId);
+    } else {
+      resolvedProjectId = latestProjectId;
+    }
     return (
-      !!title &&
-      !!authorUserId &&
-      ((id !== null && id !== undefined) || !!projectId)
+      !!title && !!authorUserId && !isNaN(resolvedProjectId) && resolvedProjectId > 0
     );
   };
 
@@ -147,7 +170,21 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
           value={assignedUserId}
           onChange={(e) => setAssignedUserId(e.target.value)}
         />
-        {id === null && (
+        {id === null && !showProjectIdInput && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500 dark:text-gray-300">
+              ProjectId will default to <b>{latestProjectId}</b>
+            </span>
+            <button
+              type="button"
+              className="ml-2 text-xs text-blue-600 underline"
+              onClick={() => setShowProjectIdInput(true)}
+            >
+              Override
+            </button>
+          </div>
+        )}
+        {id === null && showProjectIdInput && (
           <input
             type="text"
             className={inputStyles}
