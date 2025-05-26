@@ -78,11 +78,11 @@ const ReusablePriorityPage = ({ priority }: Props) => {
   const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
 
   const { data: currentUser } = useGetAuthUserQuery({});
-  const userId = currentUser?.userDetails?.userId ?? null;  const {
+  const userId = currentUser?.userDetails?.userId ?? null;
+  const {
     data: tasks,
     isLoading,
     isError: isTasksError,
-    error
   } = useGetTasksByUserQuery(userId || 0, {
     skip: userId === null,
   });
@@ -91,38 +91,9 @@ const ReusablePriorityPage = ({ priority }: Props) => {
 
   const filteredTasks = tasks?.filter(
     (task: Task) => task.priority === priority,
-  ) || [];
+  );
 
-  if (isLoading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">Loading tasks...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isTasksError) {
-    return (
-      <div className="m-5 rounded-lg bg-red-50 p-4 dark:bg-red-900/50">
-        <div className="flex">
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
-              Error loading tasks
-            </h3>
-            <div className="mt-2 text-sm text-red-700 dark:text-red-300">
-              {error ? 
-                'message' in error ? error.message : 'Failed to fetch tasks'
-                : 'An unknown error occurred'
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (isTasksError || !tasks) return <div>Error fetching tasks</div>;
 
   return (
     <div className="m-5 p-4">
