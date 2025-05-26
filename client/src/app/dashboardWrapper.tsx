@@ -11,36 +11,34 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     (state) => state.global.isSidebarCollapsed,
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+
+  // Sync dark mode with localStorage and document class
   useEffect(() => {
-    // Sync dark mode with localStorage and document class
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("darkMode", "true");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("darkMode", "false");
-    }
+    document.documentElement.classList.toggle("dark", isDarkMode);
+    localStorage.setItem("darkMode", isDarkMode ? "true" : "false");
   }, [isDarkMode]);
 
   // Load dark mode preference on mount
   useEffect(() => {
     const savedDarkMode = localStorage.getItem("darkMode") === "true";
-    if (savedDarkMode) {
-      document.documentElement.classList.add("dark");
+    if (savedDarkMode !== isDarkMode) {
+      document.documentElement.classList.toggle("dark", savedDarkMode);
     }
   }, []);
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 text-gray-900">
+    <div className="flex min-h-screen w-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <Sidebar />
-      <main
-        className={`flex w-full flex-col bg-gray-50 dark:bg-dark-bg ${
+      <div
+        className={`flex w-full flex-col ${
           isSidebarCollapsed ? "" : "md:pl-64"
         }`}
       >
         <Navbar />
-        {children}
-      </main>
+        <main className="flex-1 bg-gray-50 p-4 dark:bg-dark-bg">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
@@ -48,9 +46,9 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 const DashboardWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <StoreProvider>
-        <DashboardLayout>
-          {children}
-        </DashboardLayout>
+      <AuthProvider>
+        <DashboardLayout>{children}</DashboardLayout>
+      </AuthProvider>
     </StoreProvider>
   );
 };
