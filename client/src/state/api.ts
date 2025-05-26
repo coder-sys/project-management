@@ -1,5 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
+import { API_CONFIG, API_ENDPOINTS } from "@/lib/apiConfig";
+import { handleApiError } from "@/lib/errorHandling";
 
 export interface Project {
   id: number;
@@ -76,14 +78,19 @@ export interface Team {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: API_CONFIG.baseUrl,
     prepareHeaders: async (headers) => {
-      const session = await fetchAuthSession();
-      const { accessToken } = session.tokens ?? {};
-      if (accessToken) {
-        headers.set("Authorization", `Bearer ${accessToken}`);
+      try {
+        const session = await fetchAuthSession();
+        const { accessToken } = session.tokens ?? {};
+        if (accessToken) {
+          headers.set("Authorization", `Bearer ${accessToken}`);
+        }
+        return headers;
+      } catch (error) {
+        console.error('Error preparing headers:', error);
+        return headers;
       }
-      return headers;
     },
   }),
   reducerPath: "api",
@@ -98,44 +105,47 @@ export const api = createApi({
           const { userSub } = session;
           const { accessToken } = session.tokens ?? {};
 
-          const userDetailsResponse = await fetchWithBQ(`users/${userSub}`);
+          const userDetailsResponse = await fetchWithBQ(`${API_ENDPOINTS.users}/${userSub}`);
+          if (userDetailsResponse.error) {
+            throw new Error(handleApiError(userDetailsResponse.error));
+          }
           const userDetails = userDetailsResponse.data as User;
 
           return { data: { user, userSub, userDetails } };
         } catch (error: any) {
-          return { error: error.message || "Could not fetch user data" };
+          return { error: handleApiError(error) };
         }
       },
     }),
     getProjects: build.query<Project[], void>({
-      query: () => "projects",
+      query: () => API_ENDPOINTS.projects,
       providesTags: ["Projects"],
     }),
     createProject: build.mutation<Project, Partial<Project>>({
       query: (project) => ({
-        url: "projects",
+        url: API_ENDPOINTS.projects,
         method: "POST",
         body: project,
       }),
       invalidatesTags: ["Projects"],
     }),
     getTasks: build.query<Task[], { projectId: number }>({
-      query: ({ projectId }) => `tasks?projectId=${projectId}`,
+      query: ({ projectId }) => `${API_ENDPOINTS.tasks}?projectId=${projectId}`,
       providesTags: (result) =>
         result
           ? result.map(({ id }) => ({ type: "Tasks" as const, id }))
           : [{ type: "Tasks" as const }],
     }),
     getTasksByUser: build.query<Task[], number>({
-      query: (userId) => `tasks/user/${userId}`,
-      providesTags: (result, error, userId) =>
+      query: (userId) => `${API_ENDPOINTS.tasks}/user/${userId}`,
+      providesTags: (result) =>
         result
           ? result.map(({ id }) => ({ type: "Tasks", id }))
-          : [{ type: "Tasks", id: userId }],
+          : [{ type: "Tasks" }],
     }),
     createTask: build.mutation<Task, Partial<Task>>({
       query: (task) => ({
-        url: "tasks",
+        url: API_ENDPOINTS.tasks,
         method: "POST",
         body: task,
       }),
@@ -143,7 +153,7 @@ export const api = createApi({
     }),
     updateTaskStatus: build.mutation<Task, { taskId: number; status: string }>({
       query: ({ taskId, status }) => ({
-        url: `tasks/${taskId}/status`,
+        url: `${API_ENDPOINTS.tasks}/${taskId}/status`,
         method: "PATCH",
         body: { status },
       }),
@@ -152,15 +162,15 @@ export const api = createApi({
       ],
     }),
     getUsers: build.query<User[], void>({
-      query: () => "users",
+      query: () => API_ENDPOINTS.users,
       providesTags: ["Users"],
     }),
     getTeams: build.query<Team[], void>({
-      query: () => "teams",
+      query: () => API_ENDPOINTS.teams,
       providesTags: ["Teams"],
     }),
     search: build.query<SearchResults, string>({
-      query: (query) => `search?query=${query}`,
+      query: (query) => `${API_ENDPOINTS.search}?query=${query}`,
     }),
   }),
 });

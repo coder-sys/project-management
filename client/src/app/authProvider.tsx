@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Authenticator } from "@aws-amplify/ui-react";
 import { Amplify } from "aws-amplify";
 import "@aws-amplify/ui-react/styles.css";
+import { validateApiConfig } from "@/lib/apiConfig";
+
+// Validate API configuration on initialization
+if (!validateApiConfig()) {
+  console.error('API configuration validation failed');
+}
 
 Amplify.configure({
   Auth: {
@@ -42,11 +48,16 @@ const formFields = {
   },
 };
 
-const AuthProvider = ({ children }: any) => {
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  useEffect(() => {
+    // Additional initialization logic can be added here
+    validateApiConfig();
+  }, []);
+
   return (
     <div>
       <Authenticator formFields={formFields}>
-        {({ user }: any) =>
+        {({ signOut, user }) =>
           user ? (
             <div>{children}</div>
           ) : (
