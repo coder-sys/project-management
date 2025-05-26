@@ -1,6 +1,11 @@
+import React, { useState, useMemo } from "react";
 import Modal from "@/components/Modal";
-import { Priority, Status, useCreateTaskMutation, useGetProjectsQuery } from "@/state/api";
-import React, { useState } from "react";
+import {
+  Priority,
+  Status,
+  useCreateTaskMutation,
+  useGetProjectsQuery,
+} from "@/state/api";
 import { formatISO } from "date-fns";
 
 type Props = {
@@ -12,6 +17,7 @@ type Props = {
 const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
   const [createTask, { isLoading }] = useCreateTaskMutation();
   const { data: projects = [] } = useGetProjectsQuery();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<Status>(Status.ToDo);
@@ -21,26 +27,19 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
   const [dueDate, setDueDate] = useState("");
   const [authorUserId, setAuthorUserId] = useState("");
   const [assignedUserId, setAssignedUserId] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [showProjectIdInput, setShowProjectIdInput] = useState(false);
 
-  // Find the latest projectId and increment by 1
-  const latestProjectId = React.useMemo(() => {
-    if (!projects || projects.length === 0) return 1;
+  const defaultProjectId = useMemo(() => {
+    if (id) return Number(id);
+    if (projects.length === 0) return 1;
     return Math.max(...projects.map((p) => p.id)) + 1;
-  }, [projects]);
+  }, [id, projects]);
+
+  const isFormValid = (): boolean => {
+    return !!title && !!authorUserId;
+  };
 
   const handleSubmit = async () => {
-    let resolvedProjectId: number;
-    if (id !== null && id !== undefined && id !== "") {
-      resolvedProjectId = Number(id);
-    } else if (showProjectIdInput && projectId) {
-      resolvedProjectId = Number(projectId);
-    } else {
-      resolvedProjectId = latestProjectId;
-    }
-    if (!title || !authorUserId || isNaN(resolvedProjectId) || resolvedProjectId <= 0)
-      return;
+    if (!isFormValid()) return;
 
     const formattedStartDate = startDate
       ? formatISO(new Date(startDate), { representation: "complete" })
@@ -59,29 +58,15 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
       dueDate: formattedDueDate,
       authorUserId: parseInt(authorUserId),
       assignedUserId: assignedUserId ? parseInt(assignedUserId) : undefined,
-      projectId: resolvedProjectId,
+      projectId: defaultProjectId,
     });
   };
 
-  const isFormValid = () => {
-    let resolvedProjectId: number;
-    if (id !== null && id !== undefined && id !== "") {
-      resolvedProjectId = Number(id);
-    } else if (showProjectIdInput && projectId) {
-      resolvedProjectId = Number(projectId);
-    } else {
-      resolvedProjectId = latestProjectId;
-    }
-    return (
-      !!title && !!authorUserId && !isNaN(resolvedProjectId) && resolvedProjectId > 0
-    );
-  };
+  const inputStyles =
+    "w-full rounded border border-gray-300 p-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
 
   const selectStyles =
     "mb-4 block w-full rounded border border-gray-300 px-3 py-2 dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
-
-  const inputStyles =
-    "w-full rounded border border-gray-300 p-2 shadow-sm dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white dark:focus:outline-none";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} name="Create New Task">
@@ -99,12 +84,14 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+
         <textarea
           className={inputStyles}
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-2">
           <select
             className={selectStyles}
@@ -114,11 +101,13 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
             }
           >
             <option value="">Select Status</option>
-            <option value={Status.ToDo}>To Do</option>
-            <option value={Status.WorkInProgress}>Work In Progress</option>
-            <option value={Status.UnderReview}>Under Review</option>
-            <option value={Status.Completed}>Completed</option>
+            {Object.values(Status).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
+
           <select
             className={selectStyles}
             value={priority}
@@ -127,13 +116,14 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
             }
           >
             <option value="">Select Priority</option>
-            <option value={Priority.Urgent}>Urgent</option>
-            <option value={Priority.High}>High</option>
-            <option value={Priority.Medium}>Medium</option>
-            <option value={Priority.Low}>Low</option>
-            <option value={Priority.Backlog}>Backlog</option>
+            {Object.values(Priority).map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
           </select>
         </div>
+
         <input
           type="text"
           className={inputStyles}
@@ -156,6 +146,7 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
             onChange={(e) => setDueDate(e.target.value)}
           />
         </div>
+
         <input
           type="text"
           className={inputStyles}
@@ -163,6 +154,7 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
           value={authorUserId}
           onChange={(e) => setAuthorUserId(e.target.value)}
         />
+
         <input
           type="text"
           className={inputStyles}
@@ -170,29 +162,7 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
           value={assignedUserId}
           onChange={(e) => setAssignedUserId(e.target.value)}
         />
-        {id === null && !showProjectIdInput && (
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-300">
-              ProjectId will default to <b>{latestProjectId}</b>
-            </span>
-            <button
-              type="button"
-              className="ml-2 text-xs text-blue-600 underline"
-              onClick={() => setShowProjectIdInput(true)}
-            >
-              Override
-            </button>
-          </div>
-        )}
-        {id === null && showProjectIdInput && (
-          <input
-            type="text"
-            className={inputStyles}
-            placeholder="ProjectId"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-          />
-        )}
+
         <button
           type="submit"
           className={`focus-offset-2 mt-4 flex w-full justify-center rounded-md border border-transparent bg-blue-primary px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
