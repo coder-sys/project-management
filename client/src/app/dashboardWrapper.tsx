@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
 import AuthProvider from "./authProvider";
 import StoreProvider, { useAppSelector } from "./redux";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const isSidebarCollapsed = useAppSelector(
@@ -48,9 +49,13 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 const DashboardWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <StoreProvider>
-        <DashboardLayout>
-          {children}
-        </DashboardLayout>
+      <AuthProvider>
+        <ErrorBoundary>
+          <DashboardLayout>
+            {children}
+          </DashboardLayout>
+        </ErrorBoundary>
+      </AuthProvider>
     </StoreProvider>
   );
 };

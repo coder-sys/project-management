@@ -14,6 +14,13 @@ const Navbar = () => {
   );
   const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
 
+  const { 
+    data: currentUser,
+    isLoading,
+    isError,
+    error 
+  } = useGetAuthUserQuery({});
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -21,7 +28,6 @@ const Navbar = () => {
       console.error("Error signing out: ", error);
     }
   };
-  // Show a basic version of the navbar while loading user data
 
   return (
     <div className="flex items-center justify-between bg-white px-4 py-3 dark:bg-black">
@@ -70,19 +76,45 @@ const Navbar = () => {
         >
           <Settings className="h-6 w-6 cursor-pointer dark:text-white" />
         </Link>
-        <div className="ml-2 mr-5 hidden min-h-[2em] w-[0.1rem] bg-gray-200 md:inline-block"></div>
-        <div className="hidden items-center justify-between md:flex">
-          <div className="align-center flex h-9 w-9 justify-center">
-      
-          </div>
-          <span className="mx-3 text-gray-800 dark:text-white">
-          </span>
-          <button
-            className="hidden rounded bg-blue-400 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500 md:block"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </button>
+        <div className="ml-2 mr-5 hidden min-h-[2em] w-[0.1rem] bg-gray-200 md:inline-block"></div>        <div className="hidden items-center justify-between md:flex">
+          {isLoading ? (
+            <div className="flex items-center space-x-4">
+              <div className="h-9 w-9 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700"></div>
+              <div className="h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-700"></div>
+            </div>
+          ) : isError ? (
+            <div className="text-sm text-red-500">
+              {error ? 
+                'message' in error ? error.message : 'Failed to load user'
+                : 'An unknown error occurred'
+              }
+            </div>
+          ) : currentUser ? (
+            <>
+              <div className="align-center flex h-9 w-9 justify-center">
+                {currentUser.userDetails?.avatar ? (
+                  <Image
+                    src={currentUser.userDetails.avatar}
+                    alt="User avatar"
+                    width={36}
+                    height={36}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <User className="h-6 w-6 dark:text-white" />
+                )}
+              </div>
+              <span className="mx-3 text-gray-800 dark:text-white">
+                {currentUser.userDetails?.username || 'User'}
+              </span>
+              <button
+                className="rounded bg-blue-400 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500"
+                onClick={handleSignOut}
+              >
+                Sign out
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     </div>

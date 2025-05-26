@@ -8,13 +8,22 @@ type Props = {
 };
 
 const TaskCard = ({ task }: Props) => {
+  if (!task) {
+    return (
+      <div className="mb-3 animate-pulse rounded bg-white p-4 shadow dark:bg-dark-secondary">
+        <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+        <div className="mt-4 h-4 w-1/2 rounded bg-gray-200 dark:bg-gray-700"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-3 rounded bg-white p-4 shadow dark:bg-dark-secondary dark:text-white">
-      {task.attachments && task.attachments.length > 0 && (
+      {task.attachments?.length > 0 && (
         <div>
           <strong>Attachments:</strong>
           <div className="flex flex-wrap">
-            {task.attachments && task.attachments.length > 0 && (
+            {task.attachments[0] && (
               <Image
                 src={`https://pm-s3-images.s3.us-east-2.amazonaws.com/${task.attachments[0].fileURL}`}
                 alt={task.attachments[0].fileName}
