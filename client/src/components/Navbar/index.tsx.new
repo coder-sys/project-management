@@ -1,0 +1,95 @@
+"use client";
+
+import React from "react";
+import { Menu, Moon, Search, Sun, User } from "lucide-react";
+import Link from "next/link";
+import { useAppDispatch, useAppSelector } from "@/app/redux";
+import { setIsDarkMode, setIsSidebarCollapsed } from "@/state";
+import { useGetAuthUserQuery } from "@/state/api";
+import { signOut } from "aws-amplify/auth";
+import Image from "next/image";
+
+const Navbar = () => {
+  const dispatch = useAppDispatch();
+  const isSidebarCollapsed = useAppSelector(
+    (state) => state.global.isSidebarCollapsed
+  );
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+  const { data: currentUser } = useGetAuthUserQuery({});
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
+  return (
+    <nav className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div className="flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-4">
+          {isSidebarCollapsed && (
+            <button
+              onClick={() => dispatch(setIsSidebarCollapsed(false))}
+              className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Menu className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+            </button>
+          )}
+          
+          <div className="relative flex w-64">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search..."
+              className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2 pl-10 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => dispatch(setIsDarkMode(!isDarkMode))}
+            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          >
+            {isDarkMode ? (
+              <Sun className="h-6 w-6" />
+            ) : (
+              <Moon className="h-6 w-6" />
+            )}
+          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center">
+              {currentUser?.userDetails?.profilePictureUrl ? (
+                <Image
+                  src={currentUser.userDetails.profilePictureUrl}
+                  alt="Profile"
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                />
+              ) : (
+                <User className="h-6 w-6 rounded-full text-gray-600 dark:text-gray-400" />
+              )}
+            </div>
+            <span className="hidden text-sm font-medium text-gray-900 dark:text-white md:block">
+              {currentUser?.userDetails?.username || "User"}
+            </span>
+            <button
+              onClick={handleSignOut}
+              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Navbar;

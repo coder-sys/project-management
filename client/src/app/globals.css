@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Ensure proper stacking context */
+#root {
+  isolation: isolate;
+}
+
+/* Prevent content shift when scrollbar appears */
+html {
+  overflow-y: scroll;
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app {
+  height: 100%;
+  width: 100%;
+  @apply text-sm;
+  @apply bg-white;
+  @apply dark:bg-black;
+}
+
+/* TIMELINE STYLING */
+.timeline ._3_ygE {
+  @apply rounded-tl-md border border-r-0 border-[#e6e4e4] dark:border-stroke-dark;
+}
+.timeline ._2eZzQ {
+  @apply border-[#e6e4e4] dark:border-stroke-dark;
+}
+.timeline ._2dZTy {
+  @apply fill-white dark:fill-dark-secondary;
+}
+.timeline ._2dZTy:nth-child(even) {
+  @apply fill-[#f5f5f5] dark:fill-dark-tertiary;
+}
+.timeline ._35nLX {
+  @apply fill-white stroke-[#e6e4e4] dark:fill-dark-secondary dark:stroke-stroke-dark;
+}
+.timeline ._9w8d5 {
+  @apply fill-[#333] dark:fill-white;
+}
+.timeline ._34SS0 {
+  @apply bg-white dark:bg-dark-secondary;
+}
+.timeline ._34SS0:nth-of-type(even) {
+  @apply bg-[#f5f5f5] dark:bg-dark-tertiary;
+}
+.timeline ._RuwuK,
+.timeline ._3rUKi,
+.timeline ._1rLuZ {
+  @apply stroke-[#e6e4e4] dark:stroke-stroke-dark;
+}
+.timeline ._3ZbQT {
+  @apply border-l-0 border-[#e6e4e4] dark:border-stroke-dark;
+}
+.timeline ._3T42e {
+  @apply bg-white dark:bg-dark-bg;
+}
+.timeline ._29NTg {
+  @apply dark:text-neutral-500;
+}
