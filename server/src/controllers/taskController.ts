@@ -2,33 +2,68 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+
+// Define valid priority values
+const VALID_PRIORITIES = ["Urgent", "High", "Medium", "Low", "Backlog"];
+
 export const getTasks = async (req: Request, res: Response): Promise<void> => {
-  const { projectId } = req.query;
   try {
-    // Parse projectId to a number if present
-    const filters: any = {};
-    if (projectId !== undefined) {
-      const parsedId = Number(projectId);
-      if (!isNaN(parsedId)) {
-        filters.projectId = parsedId;
+    const { projectId } = req.query;
+
+    // Validate projectId if provided
+    if (projectId) {
+      const parsedProjectId = Number(projectId);
+      if (isNaN(parsedProjectId)) {
+        res.status(400).json({ message: 'Invalid project ID format' });
+        return;
+      }
+
+      // Check if project exists
+      const project = await prisma.project.findUnique({
+        where: { id: parsedProjectId }
+      });
+
+      if (!project) {
+        res.status(404).json({ message: 'Project not found' });
+        return;
       }
     }
 
+    // Build the query
+    const where: any = {};
+    if (projectId) {
+      where.projectId = Number(projectId);
+    }
+
     const tasks = await prisma.task.findMany({
-      where: filters,
+      where,
       include: {
         author: true,
         assignee: true,
         comments: true,
         attachments: true,
+        project: true,
       },
     });
 
-    res.json(tasks);
-  } catch (error) {
-    res.status(500).json({ error: error });
+    // Ensure each task has a valid priority
+    const processedTasks = tasks.map((task: any) => ({
+      ...task,
+      priority: task.priority && VALID_PRIORITIES.includes(task.priority) 
+        ? task.priority 
+        : "Backlog"
+    }));
+
+    res.json(processedTasks);
+  } catch (error: any) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ 
+      message: 'An error occurred while fetching tasks',
+      error: error.message
+    });
   }
 };
+
 export const createTask = async (
   req: Request,
   res: Response

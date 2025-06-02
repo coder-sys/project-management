@@ -16,6 +16,7 @@ import {
   Layers3,
   LockIcon,
   LucideIcon,
+  MessageSquare,
   Search,
   Settings,
   ShieldAlert,
@@ -27,6 +28,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
+import ChatBot from "../ChatBot";
 
 interface SidebarLinkProps {
   href: string;
@@ -65,6 +67,7 @@ const SidebarLink = ({ href, icon: Icon, label }: SidebarLinkProps) => {
 const Sidebar = () => {
   const [showProjects, setShowProjects] = useState(true);
   const [showPriority, setShowPriority] = useState(true);
+  const [showChat, setShowChat] = useState(false);
 
   const { data: projects } = useGetProjectsQuery();
   const dispatch = useAppDispatch();
@@ -147,15 +150,8 @@ const Sidebar = () => {
           <nav className="space-y-1 p-3">
             <SidebarLink icon={Home} label="Home" href="/" />
             <SidebarLink icon={Briefcase} label="Timeline" href="/timeline" />
-            <button
-              onClick={() => window.location.href = '/search'}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/50 transition-colors"
-            >
-              <Search className="h-5 w-5" />
-              <span className={`whitespace-nowrap font-medium transition-opacity duration-200 ${isSidebarCollapsed ? "opacity-0 md:hidden" : "opacity-100"}`}>
-                Search Tasks
-              </span>
-            </button>
+            <SidebarLink icon={Search} label="Search" href="/search" />
+            <SidebarLink icon={MessageSquare} label="AI Assistant" href="/chat" />
             <SidebarLink icon={Settings} label="Settings" href="/settings" />
             <SidebarLink icon={User} label="Users" href="/users" />
             <SidebarLink icon={Users} label="Teams" href="/teams" />
@@ -204,14 +200,9 @@ const Sidebar = () => {
                   <ChevronDown className="h-5 w-5" />
                 )
               )}
-            </button>
-            {showPriority && !isSidebarCollapsed && (
+            </button>            {showPriority && !isSidebarCollapsed && (
               <div className="space-y-1">
-                <SidebarLink icon={AlertCircle} label="Urgent" href="/priority/urgent" />
-                <SidebarLink icon={ShieldAlert} label="High" href="/priority/high" />
-                <SidebarLink icon={AlertTriangle} label="Medium" href="/priority/medium" />
-                <SidebarLink icon={AlertOctagon} label="Low" href="/priority/low" />
-                <SidebarLink icon={Layers3} label="Backlog" href="/priority/backlog" />
+                <SidebarLink icon={AlertCircle} label="All Priorities" href="/priority" />
               </div>
             )}
           </div>

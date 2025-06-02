@@ -1,0 +1,301 @@
+"use client";
+
+import React, { useMemo, useState } from "react";
+import Header from "@/components/Header";
+import ModalNewTask from "@/components/ModalNewTask";
+import TaskCard from "@/components/TaskCard";
+import { dataGridClassNames } from "@/lib/utils";
+import { DataGrid, GridRenderCellParams, GridColDef } from "@mui/x-data-grid";
+import { Priority, Task, useGetTasksQuery, useGetProjectsQuery } from "@/state/api";
+import { useAppSelector } from "@/app/redux";
+
+type Props = {
+  priority: Priority;
+};
+
+// Define DataGrid columns
+const columns: GridColDef[] = [
+  {
+    field: "title",
+    headerName: "Title",
+    width: 200,
+  },
+  {
+    field: "description",
+    headerName: "Description",
+    width: 300,
+    renderCell: (params: GridRenderCellParams<Task>) => params.value || "-",
+  },
+  {
+    field: "status",
+    headerName: "Status",
+    width: 130,
+    renderCell: (params: GridRenderCellParams<Task>) => (
+      <span className="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">
+        {params.value || "-"}
+      </span>
+    ),
+  },
+  {
+    field: "priority",
+    headerName: "Priority",
+    width: 100,
+    renderCell: (params: GridRenderCellParams<Task>) => (
+      <span
+        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+          {
+            Urgent: "bg-red-100 text-red-800",
+            High: "bg-orange-100 text-orange-800",
+            Medium: "bg-yellow-100 text-yellow-800",
+            Low: "bg-green-100 text-green-800",
+            Backlog: "bg-gray-100 text-gray-800",
+          }[params.value as string]
+        }`}
+      >
+        {params.value}
+      </span>
+    ),
+  },
+  {
+    field: "projectName",
+    headerName: "Project",
+    width: 150,
+  },
+  {
+    field: "tags",
+    headerName: "Tags",
+    width: 130,
+    renderCell: (params: GridRenderCellParams<Task>) => params.value || "-",
+  },
+  {
+    field: "startDate",
+    headerName: "Start Date",
+    width: 130,
+    renderCell: (params: GridRenderCellParams<Task>) => params.value || "-",
+  },
+  {
+    field: "dueDate",
+    headerName: "Due Date",
+    width: 130,
+    renderCell: (params: GridRenderCellParams<Task>) => params.value || "-",
+  },
+  {
+    field: "author",
+    headerName: "Author",
+    width: 150,
+    renderCell: (params: GridRenderCellParams<Task>) => {
+      const task = params.row;
+      return task.author?.username || "Unknown";
+    },
+  },
+  {
+    field: "assignee",
+    headerName: "Assignee",
+    width: 150,
+    renderCell: (params: GridRenderCellParams<Task>) => {
+      const task = params.row;
+      return task.assignee?.username || "Unassigned";
+    },
+  },
+];
+
+const ReusablePriorityPage = ({ priority }: Props) => {
+  const isDarkMode = useAppSelector((state) => state.global.isDarkMode);
+  const [view, setView] = useState("list");
+  const [sortBy, setSortBy] = useState<'dueDate' | 'project'>('dueDate');
+  const [isModalNewTaskOpen, setIsModalNewTaskOpen] = useState(false);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Use RTK Query hooks
+  const { data: tasks = [], isLoading: isTasksLoading, error: tasksError } = useGetTasksQuery({});
+  const { data: projects = [], isLoading: isProjectsLoading } = useGetProjectsQuery();
+
+  const isLoading = isTasksLoading || isProjectsLoading;
+  const error = tasksError;
+
+  // Filter and sort tasks
+  const filteredTasks = useMemo(() => {
+    if (!tasks?.length) return [];
+
+    return tasks
+      .filter((task) => task.priority === priority)
+      .sort((a, b) => {
+        if (sortBy === 'dueDate') {
+          if (a.dueDate && b.dueDate) {
+            const dateA = new Date(a.dueDate).getTime();
+            const dateB = new Date(b.dueDate).getTime();
+            return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+          }
+          if (a.dueDate) return sortDirection === 'asc' ? -1 : 1;
+          if (b.dueDate) return sortDirection === 'asc' ? 1 : -1;
+          return a.title.localeCompare(b.title);
+        }
+        
+        if (sortBy === 'project') {
+          const projectA = projects.find((p) => p.id === a.projectId);
+          const projectB = projects.find((p) => p.id === b.projectId);
+          const projectNameA = projectA?.name || '';
+          const projectNameB = projectB?.name || '';
+          const comparison = projectNameA.localeCompare(projectNameB);
+          return sortDirection === 'asc' ? comparison : -comparison;
+        }
+
+        return a.title.localeCompare(b.title);
+      });
+  }, [tasks, projects, priority, sortBy, sortDirection]);
+
+  // Add project data to tasks for the data grid
+  const tasksWithProjects = useMemo(() => {
+    if (!filteredTasks?.length || !projects?.length) return [];
+
+    return filteredTasks.map((task) => ({
+      ...task,
+      projectName: projects.find((p) => p.id === task.projectId)?.name || "-",
+    }));
+  }, [filteredTasks, projects]);
+
+  return (
+    <div className="px-4">
+      <ModalNewTask
+        isOpen={isModalNewTaskOpen}
+        onClose={() => setIsModalNewTaskOpen(false)}
+        id={null}
+      />
+
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between py-4">
+        <Header name={`${priority} Priority Tasks`} />
+        <button
+          className="rounded bg-blue-primary px-4 py-2 font-bold text-white hover:bg-blue-600"
+          onClick={() => setIsModalNewTaskOpen(true)}
+        >
+          New Task
+        </button>
+      </div>
+
+      {/* Controls */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <select
+            className="rounded border border-gray-300 px-3 py-2 dark:border-dark-tertiary dark:bg-dark-tertiary dark:text-white"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'dueDate' | 'project')}
+          >
+            <option value="dueDate">Sort by Due Date</option>
+            <option value="project">Sort by Project</option>
+          </select>
+          <button
+            className="rounded border border-gray-300 p-2 dark:border-dark-tertiary dark:text-white"
+            onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+          >
+            {sortDirection === 'asc' ? '↑' : '↓'}
+          </button>
+        </div>
+        
+        <div className="flex rounded border border-gray-300 dark:border-dark-tertiary">
+          <button
+            className={`px-4 py-2 ${
+              view === "list" 
+                ? "bg-gray-100 dark:bg-dark-tertiary" 
+                : "bg-white dark:bg-dark-secondary"
+            } rounded-l transition-colors`}
+            onClick={() => setView("list")}
+          >
+            List
+          </button>
+          <button
+            className={`px-4 py-2 ${
+              view === "table" 
+                ? "bg-gray-100 dark:bg-dark-tertiary" 
+                : "bg-white dark:bg-dark-secondary"
+            } rounded-r border-l transition-colors`}
+            onClick={() => setView("table")}
+          >
+            Table
+          </button>
+        </div>
+      </div>
+
+      {/* Error state */}
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 p-4 dark:bg-red-900/50">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                Error loading tasks
+              </h3>
+              <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                {error.message || 'An error occurred while loading tasks'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="flex h-48 items-center justify-center">
+          <div className="text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-primary border-t-transparent"></div>
+            <p className="mt-2 text-gray-600 dark:text-gray-400">Loading tasks...</p>
+          </div>
+        </div>
+      ) : (
+        // Content
+        view === "list" ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredTasks.map((task) => (
+              <TaskCard key={task.id} task={task} />
+            ))}
+            {filteredTasks.length === 0 && (
+              <div className="col-span-full py-8 text-center text-gray-500 dark:text-gray-400">
+                No tasks found with {priority} priority
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="h-[calc(100vh-300px)] w-full">
+            <DataGrid
+              rows={tasksWithProjects}
+              columns={columns}
+              className={dataGridClassNames}
+              sx={{
+                "& .MuiDataGrid-columnHeaders": {
+                  color: isDarkMode ? "#fff" : "#000",
+                  '& [role="row"] > *': {
+                    backgroundColor: isDarkMode ? "#1f2937" : "#f3f4f6",
+                    borderColor: isDarkMode ? "#374151" : "#e5e7eb",
+                  },
+                },
+                "& .MuiIconbutton-root": {
+                  color: isDarkMode ? "#fff" : "#000",
+                },
+                "& .MuiDataGrid-row": {
+                  color: isDarkMode ? "#fff" : "#000",
+                  "&:hover": {
+                    backgroundColor: isDarkMode ? "#374151" : "#f3f4f6",
+                  },
+                },
+                "& .MuiDataGrid-cell": {
+                  borderColor: isDarkMode ? "#374151" : "#e5e7eb",
+                },
+                "& .MuiTablePagination-root": {
+                  color: isDarkMode ? "#fff" : "#000",
+                },
+                "& .MuiDataGrid-withBorderColor": {
+                  borderColor: isDarkMode ? "#374151" : "#e5e7eb",
+                },
+              }}
+              disableRowSelectionOnClick
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+              }}
+            />
+          </div>
+        )
+      )}</div>
+  );
+};
+
+export default ReusablePriorityPage;

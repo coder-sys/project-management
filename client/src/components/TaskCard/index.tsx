@@ -39,9 +39,24 @@ const TaskCard = ({ task }: Props) => {
       <p>
         <strong>Status:</strong> {task.status}
       </p>
-      <p>
-        <strong>Priority:</strong> {task.priority}
-      </p>
+      <div className="flex items-center gap-2 mb-2">
+        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
+          {
+            'Urgent': 'bg-red-100 text-red-800',
+            'High': 'bg-orange-100 text-orange-800',
+            'Medium': 'bg-yellow-100 text-yellow-800',
+            'Low': 'bg-green-100 text-green-800',
+            'Backlog': 'bg-gray-100 text-gray-800'
+          }[task.priority || 'Backlog']
+        }`}>
+          {task.priority || "Backlog"}
+        </span>
+        {task.project && (
+          <span className="text-xs text-gray-600 dark:text-gray-400">
+            in {task.project.name}
+          </span>
+        )}
+      </div>
       <p>
         <strong>Tags:</strong> {task.tags || "No tags"}
       </p>

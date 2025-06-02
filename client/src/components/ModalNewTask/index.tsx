@@ -7,9 +7,10 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   id?: string | null;
+  onSuccess?: () => void;
 };
 
-const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
+const ModalNewTask = ({ isOpen, onClose, id = null, onSuccess }: Props) => {
   const [createTask, { isLoading }] = useCreateTaskMutation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -22,19 +23,8 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
   const [assignedUserId, setAssignedUserId] = useState("");
   const [projectId, setProjectId] = useState("");
 
-  const handleSubmit = async () => {
-    if (!title || !authorUserId || !(id !== null || projectId)) return;
-
-    const formattedStartDate = startDate
-      ? formatISO(new Date(startDate), {
-          representation: "complete",
-        })
-      : "";
-    const formattedDueDate = dueDate
-      ? formatISO(new Date(dueDate), {
-          representation: "complete",
-        })
-      : "";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
     try {
       await createTask({
@@ -43,15 +33,29 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
         status,
         priority,
         tags,
-        startDate: formattedStartDate,
-        dueDate: formattedDueDate,
-        authorUserId: parseInt(authorUserId),
+        startDate: startDate ? formatISO(new Date(startDate)) : undefined,
+        dueDate: dueDate ? formatISO(new Date(dueDate)) : undefined,
+        projectId: id ? parseInt(id) : undefined,
+        authorUserId: authorUserId ? parseInt(authorUserId) : undefined,
         assignedUserId: assignedUserId ? parseInt(assignedUserId) : undefined,
-        projectId: id !== null ? Number(id) : Number(projectId),
-      });
+      }).unwrap();
+
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setStatus(Status.ToDo);
+      setPriority(Priority.Backlog);
+      setTags("");
+      setStartDate("");
+      setDueDate("");
+      setAuthorUserId("");
+      setAssignedUserId("");
+
+      // Close modal and notify parent
       onClose();
-    } catch (error) {
-      console.error("Error creating task:", error);
+      onSuccess?.();
+    } catch (err) {
+      console.error("Failed to create task:", err);
     }
   };
   const isFormValid = () => {
@@ -70,7 +74,7 @@ const ModalNewTask = ({ isOpen, onClose, id = null }: Props) => {
         className="mt-4 space-y-6"
         onSubmit={(e) => {
           e.preventDefault();
-          handleSubmit();
+          handleSubmit(e);
         }}
       >
         <input

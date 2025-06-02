@@ -45,20 +45,39 @@ export interface Task {
   id: number;
   title: string;
   description?: string;
-  status?: Status;
-  priority?: Priority;
+  status: string;
+  priority?: string;
   tags?: string;
   startDate?: string;
   dueDate?: string;
   points?: number;
   projectId: number;
-  authorUserId?: number;
+  project?: {
+    id: number;
+    name: string;
+  };
+  authorUserId: number;
   assignedUserId?: number;
-
-  author?: User;
-  assignee?: User;
-  comments?: Comment[];
-  attachments?: Attachment[];
+  author?: {
+    userId: number;
+    username: string;
+    profilePictureUrl?: string;
+  };
+  assignee?: {
+    userId: number;
+    username: string;
+    profilePictureUrl?: string;
+  };
+  comments?: Array<{
+    id: number;
+    text: string;
+  }>;
+  attachments?: Array<{
+    id: number;
+    fileURL: string;
+    fileName?: string;
+  }>;
+  createdAt: string;
 }
 
 export interface SearchResults {
@@ -119,8 +138,8 @@ export const api = createApi({
       }),
       invalidatesTags: ["Projects"],
     }),
-    getTasks: build.query<Task[], { projectId: number }>({
-      query: ({ projectId }) => `tasks?projectId=${projectId}`,
+    getTasks: build.query<Task[], { projectId?: number }>({
+      query: ({ projectId }) => projectId ? `tasks?projectId=${projectId}` : 'tasks',
       providesTags: (result) =>
         result
           ? result.map(({ id }) => ({ type: "Tasks" as const, id }))
@@ -139,7 +158,8 @@ export const api = createApi({
         method: "POST",
         body: task,
       }),
-      invalidatesTags: ["Tasks"],
+      invalidatesTags: (result) => 
+        result ? [{ type: "Tasks", id: result.id }, { type: "Tasks" }] : [{ type: "Tasks" }],
     }),
     updateTaskStatus: build.mutation<Task, { taskId: number; status: string }>({
       query: ({ taskId, status }) => ({
@@ -176,4 +196,5 @@ export const {
   useGetTeamsQuery,
   useGetTasksByUserQuery,
   useGetAuthUserQuery,
+  useGetChatResponseMutation,
 } = api;

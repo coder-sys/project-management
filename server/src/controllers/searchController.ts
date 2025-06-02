@@ -6,29 +6,59 @@ const prisma = new PrismaClient();
 export const search = async (req: Request, res: Response): Promise<void> => {
   const { query } = req.query;
   try {
+    const queryStr = (query as string || "").toLowerCase();
+
     const tasks = await prisma.task.findMany({
       where: {
         OR: [
-          { title: { contains: query as string } },
-          { description: { contains: query as string } },
+          { title: { contains: queryStr, mode: "insensitive" } },
+          { description: { contains: queryStr, mode: "insensitive" } },
         ],
+      },
+      include: {
+        assignedTo: true,
+        project: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
       },
     });
 
     const projects = await prisma.project.findMany({
       where: {
         OR: [
-          { name: { contains: query as string } },
-          { description: { contains: query as string } },
+          { name: { contains: queryStr, mode: "insensitive" } },
+          { description: { contains: queryStr, mode: "insensitive" } },
         ],
+      },
+      include: {
+        team: true,
+        _count: {
+          select: {
+            tasks: true,
+          },
+        },
       },
     });
 
     const users = await prisma.user.findMany({
       where: {
-        OR: [{ username: { contains: query as string } }],
+        OR: [
+          { username: { contains: queryStr, mode: "insensitive" } },
+          { email: { contains: queryStr, mode: "insensitive" } },
+        ],
+      },
+      include: {
+        _count: {
+          select: {
+            assignedTasks: true,
+          },
+        },
       },
     });
+
     res.json({ tasks, projects, users });
   } catch (error: any) {
     res

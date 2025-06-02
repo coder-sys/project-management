@@ -15,19 +15,28 @@ type BoardProps = {
 const taskStatus = ["To Do", "Work In Progress", "Under Review", "Completed"];
 
 const BoardView = ({ id, setIsModalNewTaskOpen }: BoardProps) => {
+  const projectId = parseInt(id, 10);
+  if (isNaN(projectId)) {
+    return <div>Invalid project ID</div>;
+  }
+
   const {
     data: tasks,
     isLoading,
     error,
-  } = useGetTasksQuery({ projectId: Number(id) });
+  } = useGetTasksQuery({ projectId });
+
   const [updateTaskStatus] = useUpdateTaskStatusMutation();
 
   const moveTask = (taskId: number, toStatus: string) => {
     updateTaskStatus({ taskId, status: toStatus });
   };
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>An error occurred while fetching tasks</div>;
+  if (isLoading) return <div>Loading tasks...</div>;
+  if (error) {
+    console.error('Task fetching error:', error);
+    return <div className="p-4 text-red-500">Failed to load tasks. Please try refreshing the page.</div>;
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
