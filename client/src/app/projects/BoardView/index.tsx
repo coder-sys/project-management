@@ -20,6 +20,7 @@ const BoardView = ({ id, setIsModalNewTaskOpen }: BoardProps) => {
     return <div>Invalid project ID</div>;
   }
 
+  // Move hooks to top-level, outside of any conditionals
   const {
     data: tasks,
     isLoading,
@@ -183,7 +184,7 @@ const Task = ({ task }: TaskProps) => {
     >
       {task.attachments && task.attachments.length > 0 && (
         <Image
-          src={`https://pm--s3--images.s3.us-east-1.amazonaws.com/${task.attachments[0].fileURL}`}
+          src={`https://pm--s3--images.s3.us-east-1.amazonaws.com/${task.attachments[0]?.fileURL || ''}`}
           alt={task.attachments[0].fileName}
           width={400}
           height={200}
